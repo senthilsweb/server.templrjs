@@ -1,0 +1,67 @@
+services:
+
+  traefik:
+    image: "traefik:v2.5"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+     #- "--certificatesresolvers.myresolver.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.myresolver.acme.email=nathansweb@icloud.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--providers.file=true"
+      - "--providers.file.filename=/rules.yml"
+      - "--providers.file.watch=true"
+    # - "--providers.file.exposedbydefault=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/opt/templrjs/rules.yml:/rules.yml:ro"
+    labels:
+      - "traefik.http.routers.dash.rule=Host(`dash.senthilsweb.com`)"
+      - "traefik.http.routers.dash.service=api@internal"
+      - "traefik.http.routers.dash.tls=true"
+      - "traefik.http.routers.dash.entrypoints=websecure"
+      - "traefik.http.routers.dash.tls.certresolver=myresolver"
+
+  whoami:
+    image: "traefik/whoami"
+    container_name: "whoami"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.senthilsweb.com`)"
+      - "traefik.http.routers.whoami.tls=true"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.tls.certresolver=myresolver"
+
+  server.templrjs:
+    image: "senthilsweb/server.templrjs"
+    container_name: "server.templrjs"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.server-templrjs.rule=Host(`server.templrjs.senthilsweb.com`)"
+      - "traefik.http.routers.server-templrjs.tls=true"
+      - "traefik.http.routers.server-templrjs.entrypoints=websecure"
+      - "traefik.http.routers.server-templrjs.tls.certresolver=myresolver"
+  
+  #hb:
+  #  image: "zynomi/hb-to-be-modified"
+  #  container_name: "healthbuddy"
+  #  labels:
+  #    - "traefik.enable=true"
+  #    - "traefik.http.routers.hb.rule=Host(`healthbuddy.zynomi.com`)"
+  #    - "traefik.http.routers.hb.tls=true"
+  #    - "traefik.http.routers.hb.entrypoints=websecure"
+  #    - "traefik.http.routers.hb.tls.certresolver=myresolver"
